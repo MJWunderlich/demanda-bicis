@@ -377,11 +377,14 @@ def entrenar_escalon(
             context="validation",
         )
 
+        # cloudpickle en lugar del skops por defecto de MLflow 3: skops no serializa
+        # clases propias como PerfilEstimator. Se carga con la misma versión de mlflow.
         mlflow.sklearn.log_model(
             modelo,
             name=NOMBRE_MODELO_EN_RUN,
             signature=infer_signature(X_val, pred),
             input_example=X_val.head(5),
+            serialization_format=mlflow.sklearn.SERIALIZATION_FORMAT_CLOUDPICKLE,
         )
 
         return {
