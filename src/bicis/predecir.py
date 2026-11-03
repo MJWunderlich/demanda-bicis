@@ -27,6 +27,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from bicis.costos import plan_con_factor
 from bicis.transformar import FEATURES
 
 MODEL_URI_CHAMPION = "models:/demanda-bicis@champion"
@@ -94,8 +95,12 @@ def _leer_factor(cliente, run_id: str) -> float:
 
 
 def calcular_plan(prediccion: np.ndarray, factor: float) -> np.ndarray:
-    """Aplica el factor y redondea hacia arriba: ``ceil(max(pred, 0) * (1 + factor))``."""
-    return np.ceil(np.maximum(prediccion, 0.0) * (1.0 + factor)).astype(int)
+    """Aplica el factor y redondea hacia arriba: ``ceil(max(pred, 0) * (1 + factor))``.
+
+    Delega en ``costos.plan_con_factor`` para que el plan que se guarda en
+    producción sea el mismo cálculo con el que se eligió el factor.
+    """
+    return plan_con_factor(prediccion, factor).astype(int)
 
 
 def predecir(ruta: str | Path, model_uri: str = MODEL_URI_CHAMPION) -> str:

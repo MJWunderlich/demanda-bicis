@@ -48,8 +48,8 @@ def test_escribe_las_columnas_del_contrato(features: Path, monkeypatch):
     assert len(df) == 24
     assert df["factor"].unique().tolist() == [0.10]
     assert df["version_modelo"].unique().tolist() == ["7"]
-    # 100 * 1.10 = 110.00000000000001 -> ceil = 111; el redondeo hacia arriba es el contrato.
-    assert df["plan"].unique().tolist() == [111]
+    # 100 * 1.10 es 110 exacto; el ruido de punto flotante no debe sumar una bicicleta.
+    assert df["plan"].unique().tolist() == [110]
 
 
 def test_recorta_predicciones_negativas_y_redondea_hacia_arriba(features: Path, monkeypatch):
