@@ -28,6 +28,7 @@ Rutas dentro del contenedor (montajes del docker-compose.yaml):
 
 from __future__ import annotations
 
+import logging
 from datetime import timedelta
 
 import pendulum
@@ -36,6 +37,8 @@ from airflow.sdk import dag, task
 RUTA_FUENTE = "/opt/bicis/fuente/bicis.db"
 DIR_TRABAJO = "/opt/bicis/proyecto/trabajo"
 RUTA_SALIDA = "/opt/bicis/proyecto/salidas/predicciones.db"
+
+log = logging.getLogger(__name__)
 
 
 def fecha_de_ejecucion(logical_date, data_interval_start) -> str:
@@ -92,16 +95,29 @@ def prediccion_diaria():
     @task
     def predecir(ruta: str) -> str:
         """Carga `models:/demanda-bicis@champion` y escribe `predicciones.parquet`."""
+        import pandas as pd
         from bicis.predecir import predecir as _predecir
 
-        return _predecir(ruta)
+        salida = _predecir(ruta)
+        resumen = pd.read_parquet(salida, columns=["fecha", "version_modelo", "factor", "plan"])
+        log.info(
+            "fecha=%s version_modelo=%s factor=%s filas=%d plan_total=%d",
+            resumen["fecha"].iloc[0],
+            resumen["version_modelo"].iloc[0],
+            resumen["factor"].iloc[0],
+            len(resumen),
+            int(resumen["plan"].sum()),
+        )
+        return salida
 
     @task
     def almacenar(ruta: str) -> int:
         """Guarda el plan del día en `predicciones.db` y devuelve cuántas filas quedaron."""
         from bicis.almacenar import almacenar as _almacenar
 
-        return _almacenar(ruta, RUTA_SALIDA)
+        filas = _almacenar(ruta, RUTA_SALIDA)
+        log.info("filas guardadas en %s: %d", RUTA_SALIDA, filas)
+        return filas
 
     almacenar(predecir(transformar(limpiar(extraer()))))
 
