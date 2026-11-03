@@ -15,4 +15,4 @@ test:
 	$(PYTHON) -m pytest
 
 entrenar:
-	MLFLOW_TRACKING_URI=$(MLFLOW_TRACKING_URI) $(PYTHON) -m bicis.entrenar
+	PYTHONPATH=src MLFLOW_TRACKING_URI=$(MLFLOW_TRACKING_URI) $(PYTHON) -m bicis.entrenar
