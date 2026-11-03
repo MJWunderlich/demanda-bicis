@@ -5,6 +5,6 @@ description = "Pipeline diario de demanda de bicicletas con Airflow y MLflow (La
 requires-python = ">=3.12"
 
 [tool.pytest.ini_options]
-pythonpath = ["src", "scripts"]
+pythonpath = ["src", "scripts", "dags"]
 testpaths = ["tests"]
 addopts = "-q"

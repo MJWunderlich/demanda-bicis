@@ -1,6 +1,56 @@
-# Servicios del laboratorio. Esta versión trae solo MLflow (Fase 3);
-# Airflow se agrega en la Fase 4 sobre la misma red.
+# Servicios del laboratorio: Airflow 3 (LocalExecutor + Postgres) y MLflow.
+#
+# Adaptado del docker-compose.yaml oficial de Airflow 3.3.2
+# (https://airflow.apache.org/docs/apache-airflow/3.3.2/docker-compose.yaml)
+# para una laptop, según la sección 4.5 del diseño:
+#   - LocalExecutor: desaparecen el worker de Celery, Redis y Flower.
+#   - Sin DAGs de ejemplo.
+#   - Imagen propia (docker/airflow.Dockerfile) con las versiones exactas de
+#     requirements.txt.
+#   - El repo se monta en /opt/bicis/proyecto, FUERA de /opt/airflow, porque
+#     airflow-init cambia el dueño de todo lo que hay en /opt/airflow.
+#
+# Variables leídas de .env (ver .env.ejemplo): AIRFLOW_UID y MLFLOW_PORT.
 name: demanda-bicis
+
+x-airflow-common:
+  &airflow-common
+  build:
+    context: .
+    dockerfile: docker/airflow.Dockerfile
+  image: demanda-bicis/airflow:3.3.2
+  environment:
+    &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY:-}
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__CORE__DAGS_FOLDER: /opt/bicis/proyecto/dags
+    AIRFLOW__CORE__EXECUTION_API_SERVER_URL: 'http://airflow-apiserver:8080/execution/'
+    AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW__API_AUTH__JWT_SECRET:-airflow_jwt_secret}
+    AIRFLOW__API_AUTH__JWT_ISSUER: ${AIRFLOW__API_AUTH__JWT_ISSUER:-airflow}
+    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
+    # Lo que necesitan las tareas del DAG: el paquete bicis y el servidor MLflow
+    # visto desde dentro de la red de compose (nunca localhost aquí).
+    PYTHONPATH: /opt/bicis/proyecto/src
+    MLFLOW_TRACKING_URI: http://mlflow:5000
+    MLFLOW_DISABLE_AGENT_HINT: 'true'
+    # git dentro del contenedor ve el repo montado con otro dueño; sin esto
+    # `bicis.entrenar` no puede leer el commit.
+    GIT_CONFIG_COUNT: '1'
+    GIT_CONFIG_KEY_0: safe.directory
+    GIT_CONFIG_VALUE_0: '*'
+  volumes:
+    - ./:/opt/bicis/proyecto
+    - ./fuente:/opt/bicis/fuente:ro
+    - ./airflow/logs:/opt/airflow/logs
+  user: "${AIRFLOW_UID:-50000}:0"
+  depends_on:
+    &airflow-common-depends-on
+    postgres:
+      condition: service_healthy
 
 services:
   mlflow:
@@ -21,7 +71,7 @@ services:
       --port 5000
       --allowed-hosts "mlflow,mlflow:5000,localhost,localhost:5000,localhost:${MLFLOW_PORT:-5000},127.0.0.1,127.0.0.1:5000,127.0.0.1:${MLFLOW_PORT:-5000}"
     # Puerto en la laptop. macOS usa el 5000 para AirPlay Receiver; si está
-    # ocupado, exporta MLFLOW_PORT=5001 (o apaga AirPlay Receiver en Ajustes).
+    # ocupado, fija MLFLOW_PORT=5001 en .env (o apaga AirPlay Receiver en Ajustes).
     ports:
       - "${MLFLOW_PORT:-5000}:5000"
     volumes:
@@ -32,3 +82,133 @@ services:
       timeout: 5s
       retries: 12
     restart: unless-stopped
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+  airflow-apiserver:
+    <<: *airflow-common
+    command: api-server
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/api/v2/monitor/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type SchedulerJob --hostname "$${HOSTNAME}"']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    depends_on:
+      <<: *airflow-common-depends-on
+      mlflow:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-dag-processor:
+    <<: *airflow-common
+    command: dag-processor
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type DagProcessorJob --hostname "$${HOSTNAME}"']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-triggerer:
+    <<: *airflow-common
+    command: triggerer
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+  # Migra la base de Airflow, crea el usuario admin (airflow/airflow) y deja
+  # /opt/airflow (solo eso) con el dueño AIRFLOW_UID. Corre una vez y termina.
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        if [[ -z "${AIRFLOW_UID}" ]]; then
+          echo
+          echo -e "\033[1;33mAVISO: AIRFLOW_UID no está definido.\e[0m"
+          echo "Crea .env con AIRFLOW_UID=\$(id -u) (ver .env.ejemplo); si no, los logs quedan con dueño root."
+          echo
+          export AIRFLOW_UID=$$(id -u)
+        fi
+        mkdir -v -p /opt/airflow/{logs,dags,plugins,config}
+        echo "Versión de Airflow:"
+        /entrypoint airflow version
+        echo "Cambiando el dueño de /opt/airflow a ${AIRFLOW_UID:-50000}:0"
+        chown -R "${AIRFLOW_UID:-50000}:0" /opt/airflow/
+    environment:
+      <<: *airflow-common-env
+      _AIRFLOW_DB_MIGRATE: 'true'
+      _AIRFLOW_WWW_USER_CREATE: 'true'
+      _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
+      _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
+    user: "0:0"
+
+  # Contenedor de un solo uso con la misma imagen y los mismos montajes.
+  # Uso: docker compose run --rm airflow-cli python -m bicis.entrenar
+  #      docker compose run --rm airflow-cli python -m pytest tests/test_dag.py
+  airflow-cli:
+    <<: *airflow-common
+    profiles:
+      - debug
+    working_dir: /opt/bicis/proyecto
+    environment:
+      <<: *airflow-common-env
+      CONNECTION_CHECK_MAX_COUNT: "0"
+    command:
+      - bash
+      - -c
+      - airflow
+    depends_on:
+      <<: *airflow-common-depends-on
+      mlflow:
+        condition: service_healthy
+
+volumes:
+  postgres-db-volume:
