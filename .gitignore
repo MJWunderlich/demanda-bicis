@@ -1,0 +1,29 @@
+# Datos y artefactos locales (sección 4.1 del diseño)
+fuente/
+salidas/
+trabajo/
+models/
+mlflow/
+airflow/logs/
+dvc-storage/
+
+# Datos versionados con DVC (hour.csv lo ignora data/raw/.gitignore)
+mlruns/
+*.db
+*.sqlite
+
+# Entornos y herramientas
+.venv/
+venv/
+.env
+.idea/
+.vscode/
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+build/
+dist/
