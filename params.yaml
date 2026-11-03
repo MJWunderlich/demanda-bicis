@@ -1,0 +1,31 @@
+# Parámetros del modelo y del entrenamiento. Única fuente de verdad para
+# ventanas temporales, semilla e hiperparámetros.
+
+semilla: 42
+
+ventanas:
+  entrenamiento:
+    inicio: "2011-01-01"
+    fin: "2011-11-30"
+  validacion:
+    inicio: "2011-12-01"
+    fin: "2011-12-31"
+
+# Grilla del factor de ajuste, elegido en validación minimizando costo_hora.
+factor:
+  minimo: 0.00
+  maximo: 0.40
+  paso: 0.05
+
+# Escalera de modelos (sección 4.4 del diseño). Cada escalón es un run.
+modelos:
+  perfil: {}
+  ridge:
+    alpha: 1.0
+  random_forest:
+    n_estimators: 300
+    max_depth: null
+    n_jobs: -1
+  hgb:
+    learning_rate: [0.05, 0.1, 0.2]
+    max_iter: 300
