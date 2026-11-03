@@ -1,0 +1,3 @@
+# Costo por bicicleta y hora. Nunca se escriben en el código.
+faltante: 3   # una bicicleta que faltó (demanda > plan)
+sobrante: 1   # una bicicleta que sobró (plan > demanda)

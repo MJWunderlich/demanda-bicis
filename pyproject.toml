@@ -1,0 +1,10 @@
+[project]
+name = "demanda-bicis"
+version = "0.1.0"
+description = "Pipeline diario de demanda de bicicletas con Airflow y MLflow (Lab 1, Product Development)"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q"
