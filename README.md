@@ -35,3 +35,25 @@ El archivo tiene 17,379 filas, del 2011-01-01 al 2012-12-31.
    ```
 
 El repo se monta en `/opt/bicis/proyecto`, la fuente en `/opt/bicis/fuente` (solo lectura) y los logs en `airflow/logs/`. Las pruebas del DAG necesitan Airflow y corren dentro de la imagen con `make test-dag`; `make entrenar-docker` entrena con exactamente las mismas versiones que cargan el modelo en Airflow.
+
+## Deriva: el campeón en producción
+
+`scripts/evaluar_produccion.py` une `salidas/predicciones.db` con la demanda real de la fuente y compara enero de 2012 (producción, tras el backfill) con diciembre de 2011 (validación, recalculada con el mismo campeón y el mismo factor). Campeón: `demanda-bicis` versión 1 (`hgb-lr-0.05`), factor 0.05; costos 3 por bicicleta faltante y 1 por sobrante.
+
+| métrica | diciembre 2011 (validación) | enero 2012 (producción) | cambio |
+|---|---|---|---|
+| filas (horas) | 741 | 741 | +0 |
+| demanda media por hora | 117.8 | 130.6 | +12.71 (+11%) |
+| MAE | 31.64 | 68.71 | +37.08 (+117%) |
+| sesgo (predicción − real) | +15.20 | -67.76 | -82.96 |
+| costo por hora | 46.43 | 194.89 | +148.46 (+320%) |
+
+El sesgo pasa de +15 a −68 bicicletas por hora: el modelo subestima casi toda la demanda de enero de 2012, y ese sesgo explica casi todo el MAE. Con los costos del laboratorio, faltar cuesta tres veces más que sobrar, así que el costo por hora se cuadruplica. La causa es la deriva: el modelo no ve el año y aprendió, con un solo año de datos, que `mnth = 1` significa poca demanda (enero de 2011 promedió 56 bicicletas por hora, el sistema estaba arrancando), pero enero de 2012 promedia 131. La predicción media de enero de 2012 fue 63. Esto es lo que justifica reentrenar con datos recientes.
+
+![MAE por día en enero de 2012](docs/capturas/deriva_enero_2012.png)
+
+El único día por debajo de la referencia de validación es el 21 de enero (nevada en Washington): la demanda real cayó al nivel que el modelo esperaba. Para regenerar la tabla y la figura, con MLflow arriba:
+
+```
+make evaluar
+```

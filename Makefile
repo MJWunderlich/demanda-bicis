@@ -9,7 +9,7 @@ PYTHON ?= $(firstword $(wildcard .venv/bin/python ../.venv/bin/python) python)
 MLFLOW_PORT ?= 5000
 MLFLOW_TRACKING_URI ?= http://localhost:$(MLFLOW_PORT)
 
-.PHONY: env fuente test test-dag entrenar entrenar-docker up down logs
+.PHONY: env fuente test test-dag entrenar entrenar-docker evaluar up down logs
 
 # Crea .env con el uid del usuario si no existe (Airflow escribe logs con ese dueño).
 env:
@@ -31,6 +31,10 @@ entrenar:
 # Entrena con las mismas versiones que cargan el modelo en Airflow.
 entrenar-docker:
 	docker compose run --rm airflow-cli python -m bicis.entrenar
+
+# Deriva: compara producción (salidas/predicciones.db) con validación; escribe docs/capturas y docs/deriva_*.md.
+evaluar:
+	MLFLOW_TRACKING_URI=$(MLFLOW_TRACKING_URI) $(PYTHON) scripts/evaluar_produccion.py
 
 up: env
 	docker compose up -d
