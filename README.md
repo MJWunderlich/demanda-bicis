@@ -57,3 +57,14 @@ El único día por debajo de la referencia de validación es el 21 de enero (nev
 ```
 make evaluar
 ```
+
+## Compuerta de promoción
+
+`bicis.compuerta.compuerta(challenger, champion, umbrales)` es una función pura (no importa MLflow) que decide si un modelo nuevo reemplaza al campeón. Aplica cuatro reglas en orden y devuelve `(promover, motivo)`, donde el motivo nombra la primera regla que falla con sus números:
+
+1. Features idénticas (misma lista, mismo orden).
+2. `latencia_p95_ms` ≤ 200.
+3. `tamano_modelo_mb` ≤ 100.
+4. `costo_hora_eval` al menos 2 % más bajo que el del campeón.
+
+Los umbrales viven en `params.yaml` bajo `compuerta`. Con estas reglas, el random forest de la escalera (203 MB) nunca se promovería aunque mejorara el costo, y un retador con otras features se rechaza antes de mirar métricas.

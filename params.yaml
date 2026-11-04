@@ -29,3 +29,10 @@ modelos:
   hgb:
     learning_rate: [0.05, 0.1, 0.2]
     max_iter: 300
+
+# Compuerta de promoción (Fase 6). Reglas en orden: features idénticas,
+# latencia, tamaño, mejora mínima de costo_hora_eval respecto al champion.
+compuerta:
+  latencia_p95_ms_max: 200
+  tamano_modelo_mb_max: 100
+  mejora_minima_costo: 0.02   # fracción: 2 %
