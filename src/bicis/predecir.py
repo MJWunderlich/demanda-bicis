@@ -43,7 +43,9 @@ class ModeloCargado:
 
     Attributes:
         modelo: Objeto con ``predict(X)`` que acepta un DataFrame con ``FEATURES``.
-        version_modelo: Número de versión del Registry que resolvió el alias.
+        version_modelo: Modelo registrado y número de versión que resolvió el
+            alias, como texto ``"demanda-bicis/1"``. Así cada predicción
+            guardada dice qué modelo y qué versión la produjo.
         factor: Factor de ajuste del run que entrenó esa versión.
     """
 
@@ -81,7 +83,7 @@ def cargar_champion(model_uri: str = MODEL_URI_CHAMPION) -> ModeloCargado:
     version = cliente.get_model_version_by_alias(partes["nombre"], partes["alias"])
     modelo = mlflow.pyfunc.load_model(f"models:/{partes['nombre']}/{version.version}")
     factor = _leer_factor(cliente, version.run_id)
-    return ModeloCargado(modelo=modelo, version_modelo=str(version.version), factor=factor)
+    return ModeloCargado(modelo=modelo, version_modelo=f"{partes['nombre']}/{version.version}", factor=factor)
 
 
 def _leer_factor(cliente, run_id: str) -> float:

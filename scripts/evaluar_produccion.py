@@ -285,7 +285,7 @@ def main(argv: list[str] | None = None) -> int:
     versiones = sorted(produccion["version_modelo"].unique())
     tabla = tabla_markdown(columnas)
     encabezado = (
-        f"Campeón: versión {', '.join(versiones)} de demanda-bicis, factor "
+        f"Campeón: {', '.join(versiones)} (modelo registrado/versión), factor "
         f"{produccion['factor'].iloc[0]:.2f}. Costos: faltante {costos['faltante']:g}, "
         f"sobrante {costos['sobrante']:g}.\n\n"
     )

@@ -112,6 +112,6 @@ def test_main_sin_validacion(tmp_path, capsys):
     assert codigo == 0
     salida = capsys.readouterr().out
     assert "| métrica | enero 2012 (producción) |" in salida
-    assert "Campeón: versión 1" in salida
+    assert "Campeón: 1 (modelo registrado/versión)" in salida
     assert (tmp_path / "deriva.png").exists()
     assert (tmp_path / "deriva.md").read_text().count("\n") >= 7

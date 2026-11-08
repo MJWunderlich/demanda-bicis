@@ -34,7 +34,7 @@ entrenar-docker:
 
 # Deriva: compara producción (salidas/predicciones.db) con validación; escribe docs/capturas y docs/deriva_*.md.
 evaluar:
-	MLFLOW_TRACKING_URI=$(MLFLOW_TRACKING_URI) $(PYTHON) scripts/evaluar_produccion.py
+	MLFLOW_TRACKING_URI=$(MLFLOW_TRACKING_URI) MLFLOW_DISABLE_AGENT_HINT=1 $(PYTHON) scripts/evaluar_produccion.py
 
 up: env
 	docker compose up -d

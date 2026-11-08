@@ -1,4 +1,4 @@
-Campeón: versión 1 de demanda-bicis, factor 0.05. Costos: faltante 3, sobrante 1.
+Campeón: demanda-bicis/1 (modelo registrado/versión), factor 0.05. Costos: faltante 3, sobrante 1.
 
 | métrica | diciembre 2011 (validación) | enero 2012 (producción) | cambio |
 |---|---|---|---|
