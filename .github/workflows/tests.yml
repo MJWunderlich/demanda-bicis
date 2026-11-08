@@ -1,0 +1,23 @@
+# Pruebas en cada push y pull request. Instala requirements.txt y corre pytest.
+# Las pruebas no necesitan MLflow, Docker ni DVC: las que dependen de la fuente
+# real o de Airflow se omiten solas (skipif / importorskip).
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          # La misma versión que la imagen de Airflow (apache/airflow:3.3.2-python3.12).
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: pip install -r requirements.txt
+      - run: python -m pytest
