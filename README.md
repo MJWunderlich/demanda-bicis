@@ -171,9 +171,12 @@ En `docs/capturas/`:
 | archivo | qué muestra |
 |---|---|
 | `deriva_enero_2012.png` | MAE por día en enero de 2012 contra la referencia de validación |
-| `mlflow_experimento.png` | tabla del experimento `demanda-bicis` con los cuatro escalones y los runs anidados de HGB |
-| `mlflow_run_champion.png` | run `hgb-lr-0.05`: parámetros, métricas, tags de linaje y artefactos |
-| `mlflow_registry.png` | modelo registrado `demanda-bicis`, versión 1 con alias `champion` |
+| `mlflow_experimentos.png` | tabla del experimento `demanda-bicis` con los cuatro escalones y los runs anidados de HGB; `hgb-lr-0.05` aparece ligado a `demanda-bicis v1` |
+| `mlflow_run_champion.png` | run `hgb-lr-0.05`: parámetros, métricas, tags de linaje (`git_commit`, `features`, `huella_datos`, `dvc_md5`), datasets y modelo registrado |
+| `mlflow_registry.png` | modelo registrado `demanda-bicis`, versión 1 con alias `champion` y tags `escalon` y `factor` |
+| `mlflow_costo_vs_factor.png` | artefacto del campeón: costo por hora en validación según el factor, mínimo en 0.05 |
+| `mlflow_mae_por_hora.png` | artefacto del campeón: MAE por hora del día en validación |
+| `mlflow_real_vs_prediccion_val.png` | artefacto del campeón: demanda real contra predicción en diciembre de 2011 |
 | `airflow_grilla_enero.png` | grilla de `prediccion_diaria` con las 31 ejecuciones de enero en verde |
 | `airflow_log_predecir.png` | log de la tarea `predecir` con la línea `version_modelo=demanda-bicis/1` |
 
