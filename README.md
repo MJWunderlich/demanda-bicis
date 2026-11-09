@@ -177,8 +177,8 @@ En `docs/capturas/`:
 | `mlflow_costo_vs_factor.png` | artefacto del campeón: costo por hora en validación según el factor, mínimo en 0.05 |
 | `mlflow_mae_por_hora.png` | artefacto del campeón: MAE por hora del día en validación |
 | `mlflow_real_vs_prediccion_val.png` | artefacto del campeón: demanda real contra predicción en diciembre de 2011 |
-| `airflow_grilla_enero.png` | grilla de `prediccion_diaria` con las 31 ejecuciones de enero en verde |
-| `airflow_log_predecir.png` | log de la tarea `predecir` con la línea `version_modelo=demanda-bicis/1` |
+| `airflow_grilla_enero.png` | grilla de `prediccion_diaria`: las 31 ejecuciones del backfill de enero más las dos manuales de Sandy, cinco tareas en verde |
+| `airflow_log_predecir.png` | log de `predecir` del 2012-01-26 con la línea `version_modelo=demanda-bicis/1 factor=0.05 filas=24`; las líneas en rojo son los avisos de MLflow por stderr |
 
 ## Verificación
 
